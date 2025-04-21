@@ -8,7 +8,7 @@
                 <field name="date"/>
                 <field name="partner_id"/>
                 <field name="payment_names"/>
-                <field name="state"/>
+                <!-- <field name="state"/> -->
                 <button
                     name="action_print_receipt"
                     string="Print Receipt"
@@ -30,7 +30,7 @@
                         <field name="name"/>
                         <field name="date"/>
                         <field name="partner_id"/>
-                        <field name="state"/>
+                        <!-- <field name="state"/> -->
                     </group>
                     <group>
                         <field name="payment_names" readonly="1"/>

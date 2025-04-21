@@ -149,8 +149,9 @@
                     </table>
                     <br/>
                 </t>
-                <t t-set="withholdings"
-                   t-value="o.payment_ids.mapped('l10n_ar_withholding_line_ids')"
+                <t t-if="o.payment_ids and 'l10n_ar_withholding_line_ids' in o.payment_ids[0]._fields">
+                    <t t-set="withholdings"
+                        t-value="o.payment_ids.mapped('l10n_ar_withholding_line_ids')"
                 />
                 <table
                     class="table table-sm o_main_table"
@@ -183,6 +184,7 @@
                         </t>
                     </tbody>
                 </table>
+            </t>
                 <br/>
                 <table
                     class="table table-sm o_main_table"

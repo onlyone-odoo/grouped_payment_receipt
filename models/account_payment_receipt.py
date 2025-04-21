@@ -58,7 +58,7 @@ class AccountPaymentReceipt(models.Model):
             ("cancelled", "Cancelled"),
         ],
         string="Status",
-        default="draft",
+        default="posted",
         required=True,
     )
 
@@ -84,6 +84,45 @@ class AccountPaymentReceipt(models.Model):
             record.currency_id = (
                 record.company_id.currency_id if record.company_id else False
             )
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        if not self.partner_id:
+            self.payment_ids = False
+            self.move_ids = False
+            return
+
+        # Obtener pagos posteados del partner que aún no están en otro recibo
+        used_payment_ids = self.env['account.payment.receipt'].search([]).mapped('payment_ids.id')
+
+        available_payments = self.env['account.payment'].search([
+            ('partner_id', '=', self.partner_id.id),
+            ('state', '=', 'posted'),
+            ('id', 'not in', used_payment_ids),
+        ])
+
+        # Obtener facturas relacionadas con esos pagos
+        invoices = self.env['account.move']
+        for payment in available_payments:
+            payment_lines = payment.move_id.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )
+            reconciliations = self.env['account.partial.reconcile'].search([
+                '|',
+                ('debit_move_id', 'in', payment_lines.ids),
+                ('credit_move_id', 'in', payment_lines.ids),
+            ])
+            for reconciliation in reconciliations:
+                invoice = (
+                    reconciliation.credit_move_id.move_id
+                    if reconciliation.debit_move_id in payment_lines
+                    else reconciliation.debit_move_id.move_id
+                )
+                if invoice.is_invoice():
+                    invoices |= invoice
+
+        self.payment_ids = available_payments
+        self.move_ids = invoices
 
     def get_payments_by_currency(self):
         """Return payments grouped by currency as a list of (currency, payments) tuples."""
